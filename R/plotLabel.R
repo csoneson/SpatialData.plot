@@ -18,7 +18,7 @@
 #' @param nan character string; color for missing values (hidden by default).
 #' 
 #' @examples
-#' x <- system.file("extdata", "blobs.zarr", package="SpatialData")
+#' x <- system.file("extdata", "blobs.zarr", package="spatialdataR")
 #' x <- readSpatialData(x)
 #' 
 #' i <- "blobs_labels"

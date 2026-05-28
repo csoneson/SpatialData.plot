@@ -23,7 +23,7 @@
 #'
 #' @examples
 #' x <- file.path("extdata", "blobs.zarr")
-#' x <- system.file(x, package="SpatialData")
+#' x <- system.file(x, package="spatialdataR")
 #' x <- readSpatialData(x, tables=FALSE)
 #' 
 #' ms <- lapply(seq(3), \(.) 
@@ -39,7 +39,7 @@
 #' cl <- rep(list(c(0, 1/3)), 3)
 #' plotSpatialData() + plotImage(x, k=1, c=cmy, cl=cl)
 #' 
-#' @import SpatialData
+#' @import spatialdataR
 NULL
 
 .check_cl <- \(cl, d) {
