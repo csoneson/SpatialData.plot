@@ -162,8 +162,8 @@ pa <- get_demo_SDdata("merfish")
 (x <- readSpatialData(pa))
 ```
 
-There are only `r length(SpatialData::shape(x, "cells"))` cells, but 
-`r format(length(SpatialData::point(x, "single_molecule")), big.mark=",")` 
+There are only `r length(spatialdataR::shape(x, "cells"))` cells, but 
+`r format(length(spatialdataR::point(x, "single_molecule")), big.mark=",")` 
 molecules, so that we downsample a random subset of 1,000 for visualization:
 
 ```{r merfish-plot, fig.width=6, fig.height=4}

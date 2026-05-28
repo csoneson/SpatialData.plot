@@ -93,7 +93,7 @@ NULL
 setMethod("plotShape", "SpatialData", \(x, i=1, j=1, assay=1, ...) {
     if (is.numeric(i)) i <- shapeNames(x)[i]
     y <- shape(x, i)
-    y <- SpatialData::transform(y, j)
+    y <- spatialdataR::transform(y, j)
     .plot(x, y, assay=assay, i=i, ...)
 })
 #' @export
@@ -101,6 +101,6 @@ setMethod("plotShape", "SpatialData", \(x, i=1, j=1, assay=1, ...) {
 setMethod("plotPoint", "SpatialData", \(x, i=1, j=1, ...) {
     if (is.numeric(i)) i <- pointNames(x)[i]
     y <- point(x, i)
-    y <- SpatialData::transform(y, j)
+    y <- spatialdataR::transform(y, j)
     .plot(x, y, i=i, ...)
 })
