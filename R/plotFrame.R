@@ -10,7 +10,7 @@
 #'
 #' @examples
 #' x <- file.path("extdata", "blobs.zarr")
-#' x <- system.file(x, package="SpatialData")
+#' x <- system.file(x, package="spatialdataR")
 #' x <- readSpatialData(x)
 #'
 #' # shapes
@@ -36,7 +36,7 @@ NULL
 
 #' @importFrom sf st_as_sf st_coordinates st_geometry_type st_buffer
 #' @importFrom ggplot2 aes theme scale_type geom_sf coord_sf
-#' @importFrom SpatialData transform
+#' @importFrom spatialdataR transform
 #' @importFrom ggforce geom_circle
 #' @importFrom methods is
 #' @importFrom utils tail
@@ -93,7 +93,7 @@ NULL
 setMethod("plotShape", "SpatialData", \(x, i=1, j=1, assay=1, ...) {
     if (is.numeric(i)) i <- shapeNames(x)[i]
     y <- shape(x, i)
-    y <- SpatialData::transform(y, j)
+    y <- spatialdataR::transform(y, j)
     .plot(x, y, assay=assay, i=i, ...)
 })
 #' @export
@@ -101,6 +101,6 @@ setMethod("plotShape", "SpatialData", \(x, i=1, j=1, assay=1, ...) {
 setMethod("plotPoint", "SpatialData", \(x, i=1, j=1, ...) {
     if (is.numeric(i)) i <- pointNames(x)[i]
     y <- point(x, i)
-    y <- SpatialData::transform(y, j)
+    y <- spatialdataR::transform(y, j)
     .plot(x, y, i=i, ...)
 })

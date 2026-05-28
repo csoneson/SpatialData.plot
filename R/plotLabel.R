@@ -18,7 +18,7 @@
 #' @param nan character string; color for missing values (hidden by default).
 #' 
 #' @examples
-#' x <- system.file("extdata", "blobs.zarr", package="SpatialData")
+#' x <- system.file("extdata", "blobs.zarr", package="spatialdataR")
 #' x <- readSpatialData(x)
 #' 
 #' i <- "blobs_labels"
@@ -75,7 +75,7 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
         t <- table(x, hasTable(x, i, name=TRUE))
         ik <- .instance_key(t)
         # TODO: search ik in both internal and regular colData for now
-        # thus perhaps update, SpatialData::valTable instead
+        # thus perhaps update, spatialdataR::valTable instead
         # idx <- match(df$z, int_colData(t)[[ik]])
         if(ik %in% names(int_colData(t))){
           coldata <- int_colData(t)[[ik]]

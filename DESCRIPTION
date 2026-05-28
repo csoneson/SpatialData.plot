@@ -1,8 +1,8 @@
 Package: SpatialData.plot
 Title: SpatialData visualization
-Depends: R (>= 4.6), SpatialData
+Depends: R (>= 4.6), spatialdataR
 Version: 0.99.6
-Description: Visualization suit for 'SpatialData' (R). Current functionality 
+Description: Visualization suit for 'spatialdataR'. Current functionality 
     includes handling of multiscale 'images', visualizing 'labels', 'points', 
     and 'shapes'. For the latter, POINT, POLYGON, and MULTIPOLYGON geometries 
     are supported. For all but 'images', there is support to pass information 
@@ -49,7 +49,7 @@ Suggests:
     testthat,
     vdiffr
 Remotes:
-    HelenaLC/SpatialData,
+    HelenaLC/spatialdataR,
     HelenaLC/SpatialData.data
 biocViews: 
     Spatial,

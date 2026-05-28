@@ -23,7 +23,7 @@ knitr::opts_chunk$set(cache=FALSE, message=FALSE, warning=FALSE)
 library(ggplot2)
 library(patchwork)
 library(ggnewscale)
-library(SpatialData)
+library(spatialdataR)
 library(SpatialData.data)
 library(SpatialData.plot)
 library(SingleCellExperiment)
@@ -31,7 +31,7 @@ library(SingleCellExperiment)
 
 # Introduction
 
-The `SpatialData` package contains a set of reader and plotting functions for 
+The `SpatialData.plot` package contains a set of plotting functions for 
 spatial omics data stored as [SpatialData](https://spatialdata.scverse.org/en/latest/index.html) 
 `.zarr` files that follow [OME-NGFF specs](https://ngff.openmicroscopy.org/latest/#image-layout).
 
@@ -47,7 +47,7 @@ are represented as `r BiocStyle::Biocpkg("SingleCellExperiment")` as tables.
 
 ```{r read-blobs}
 x <- file.path("extdata", "blobs.zarr")
-x <- system.file(x, package="SpatialData")
+x <- system.file(x, package="spatialdataR")
 (x <- readSpatialData(x))
 ```
 
@@ -162,8 +162,8 @@ pa <- get_demo_SDdata("merfish")
 (x <- readSpatialData(pa))
 ```
 
-There are only `r length(SpatialData::shape(x, "cells"))` cells, but 
-`r format(length(SpatialData::point(x, "single_molecule")), big.mark=",")` 
+There are only `r length(spatialdataR::shape(x, "cells"))` cells, but 
+`r format(length(spatialdataR::point(x, "single_molecule")), big.mark=",")` 
 molecules, so that we downsample a random subset of 1,000 for visualization:
 
 ```{r merfish-plot, fig.width=6, fig.height=4}
