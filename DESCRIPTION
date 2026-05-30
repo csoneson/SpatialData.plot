@@ -49,7 +49,6 @@ Suggests:
     testthat,
     vdiffr
 Remotes:
-    HelenaLC/spatialdataR,
     HelenaLC/SpatialData.data
 biocViews: 
     Spatial,
