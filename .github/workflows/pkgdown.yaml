@@ -31,8 +31,10 @@ jobs:
         with:
           r-version: 'devel'
           http-user-agent: 'release'
-          extra-repositories: 'https://bioc.r-universe.dev'
           use-public-rspm: true
+          extra-repositories: |
+            https://biocstaging.r-universe.dev
+            https://bioc.r-universe.dev
 
       - uses: r-lib/actions/setup-r-dependencies@v2
         with:
