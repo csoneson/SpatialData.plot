@@ -161,11 +161,17 @@ NULL
 #' @importFrom spatialdataR data_type
 .df_i <- \(x, k=NULL, ch=NULL, c=NULL, cl=NULL) {
     a <- .get_multiscale_data(x, k)
+    # max-projection over z-stacks
+    d <- length(dim(x))
+    if (d == 4) a <- apply(a, c(1, 3, 4), max)
+    # subset channels of interest
     a <- a[.ch_idx(x, ch),,,drop=FALSE]
     a <- .norm_ia(a, data_type(x))
+    # color merging & contrasts
     a <- .prep_ia(a, c, cl)
 }
 
+#' @importFrom utils tail
 #' @importFrom spatialdataR transform
 .get_wh <- \(x) {
     wh <- metadata(x)$wh
@@ -173,7 +179,9 @@ NULL
         df <- data.frame(x=wh[[1]], y=wh[[2]])
     } else {
         ds <- dim(data(x, 1))
-        df <- data.frame(x=c(0, ds[3]), y=c(0, ds[2]))
+        df <- data.frame(
+            x=c(0, tail(ds, 1)), 
+            y=c(0, tail(ds, 2)[1]))
     }
     list(w=df[, 1], h=df[, 2])
 }

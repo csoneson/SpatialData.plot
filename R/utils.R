@@ -47,9 +47,8 @@
 
 # guess scale of image or label
 .guess_scale <- \(x, w, h) {
-  n <- length(dim(x))
-  i <- ifelse(n == 3, -1, TRUE)
-  d <- vapply(x@data, dim, numeric(n))
+  i <- match(c("y", "x"), vapply(axes(x), \(.) .$name, character(1)))
+  d <- vapply(x@data, dim, numeric(length(dim(x))))
   d <- apply(d, 2, \(.) sum(abs(.[i]-c(h, w))))
   which.min(d)
 }

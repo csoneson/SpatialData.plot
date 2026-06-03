@@ -16,6 +16,9 @@
 #' @param pal character vector; color for discrete/continuous values
 #'   (interpolated automatically when insufficient values are provided).
 #' @param nan character string; color for missing values (hidden by default).
+#' @param z scalar integer; 
+#'   specifies which z-slice to plot when \code{label(x, i)} is 3D; 
+#'   by default (NULL), will apply a max-projection across all z-slices.
 #' 
 #' @examples
 #' x <- system.file("extdata", "blobs.zarr", package="spatialdataR")
@@ -54,20 +57,32 @@ NULL
 #' @importFrom SingleCellExperiment colData
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
-    a=0.5, pal=c("red", "green"), nan=NA, assay=1) {
+    a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
+    
     # transformation
     if (is.numeric(j))
       j <- CTname(y)[j]
     y <- transform(y, j)
-    ym <- .get_multiscale_data(y, k)
     wh <- .get_wh(y)
+    
+    # get array data
+    ym <- .get_multiscale_data(y, k)
+    if (length(dim(ym)) > 2) {
+        if (is.null(z)) {
+            ym <- apply(ym, c(2, 3), max)
+        } else {
+            ym <- ym[z,,]
+        }
+    }
   
-    # Keep only indices != 0 since labels might be sparse and thus save memory by not plotting all pixels
+    # keep only indices != 0 since labels might be sparse 
+    # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
-    # All other SD elements are flipped when plotted. Let's keep the same convention here.
+    # all other SD elements are flipped when plotted;
+    # let's keep the same convention here
     df <- data.frame(x=idx[,2L]+wh$w[1], y=idx[,1L]+wh$h[1], z=ym[idx])
     aes <- aes(.data[["x"]], .data[["y"]])
     if (!is.null(c)) {
@@ -77,7 +92,7 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
         # TODO: search ik in both internal and regular colData for now
         # thus perhaps update, spatialdataR::valTable instead
         # idx <- match(df$z, int_colData(t)[[ik]])
-        if(ik %in% names(int_colData(t))){
+        if (ik %in% names(int_colData(t))){
           coldata <- int_colData(t)[[ik]]
         } else {
           coldata <- colData(t)[[ik]]

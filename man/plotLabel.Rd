@@ -14,7 +14,8 @@
   a = 0.5,
   pal = c("red", "green"),
   nan = NA,
-  assay = 1
+  assay = 1,
+  z = NULL
 )
 }
 \arguments{
@@ -41,6 +42,10 @@ a \code{colData} column or row name in a \code{table} annotating \code{i}.}
 
 \item{assay}{character string; in case of \code{c} denoting a row name,
 specifies which \code{assay} data to use (see \code{\link{valTable}}).}
+
+\item{z}{scalar integer; 
+specifies which z-slice to plot when \code{label(x, i)} is 3D; 
+by default (NULL), will apply a max-projection across all z-slices.}
 }
 \description{
 \code{SpatialData} label viz.
