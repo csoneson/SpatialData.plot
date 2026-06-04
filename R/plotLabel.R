@@ -58,6 +58,7 @@ NULL
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
     a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
+    
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
@@ -66,13 +67,14 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     if (is.numeric(j))
       j <- CTname(y)[j]
     y <- transform(y, j)
-    wh <- .get_wh(y)
-    
+
     # get array data
     ym <- .get_multiscale_data(y, k)
     if (length(dim(ym)) > 2) {
         if (is.null(z)) {
-            ym <- apply(ym, c(2, 3), max)
+            nm <- vapply(axes(y), \(.) .$name, character(1))
+            yx <- match(c("y", "x"), nm)
+            ym <- apply(ym, yx, max)
         } else {
             ym <- ym[z,,]
         }
@@ -81,9 +83,19 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     # keep only indices != 0 since labels might be sparse 
     # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
-    # all other SD elements are flipped when plotted;
-    # let's keep the same convention here
-    df <- data.frame(x=idx[,2L]+wh$w[1], y=idx[,1L]+wh$h[1], z=ym[idx])
+    
+    # offset &  multi-scale adjustment
+    wh <- .get_wh(y)
+    t <- .get_multiscale_scale(y)
+    tx <- t[length(t)]
+    ty <- t[length(t)-1L]
+    .x <- tx*idx[, 2L]
+    .y <- ty*idx[, 1L]
+    df <- data.frame(
+        x = .x*(wh$w[2]/max(.x))+wh$w[1],
+        y = .y*(wh$h[2]/max(.y))+wh$h[1],
+        z = ym[idx])
+    
     aes <- aes(.data[["x"]], .data[["y"]])
     if (!is.null(c)) {
         stopifnot(length(c) == 1, is.character(c))

@@ -58,3 +58,11 @@
   if (!is.null(k)) return(data(x, k))
   data(x, .guess_scale(x, w, h))
 }
+
+#' @importFrom spatialdataR meta
+.get_multiscale_scale <- \(x) {
+    ms <- spatialdataR:::multiscales(meta(x))[[1]]
+    ds <- ms$datasets[[1]]
+    ct <- ds$coordinateTransformations[[1]]
+    return(unlist(ct$scale))
+}

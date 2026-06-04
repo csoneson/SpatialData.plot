@@ -183,7 +183,12 @@ NULL
             x=c(0, tail(ds, 1)), 
             y=c(0, tail(ds, 2)[1]))
     }
-    list(w=df[, 1], h=df[, 2])
+    wh <- list(w=df$x, h=df$y)
+    # multi-scale adjustment
+    t <- .get_multiscale_scale(x)
+    wh$w[2] <- wh$w[2]*t[length(t)]
+    wh$h[2] <- wh$h[2]*t[length(t)-1]
+    return(wh)
 }
 
 #' @importFrom ggplot2 guides geom_point geom_blank annotation_raster 
