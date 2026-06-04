@@ -91,9 +91,11 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     ty <- t[length(t)-1L]
     .x <- tx*idx[, 2L]
     .y <- ty*idx[, 1L]
+    mx <- dim(ym)[2]*tx
+    my <- dim(ym)[1]*ty
     df <- data.frame(
-        x = .x*(wh$w[2]/max(.x))+wh$w[1],
-        y = .y*(wh$h[2]/max(.y))+wh$h[1],
+        x = .x*(wh$w[2]/mx)+wh$w[1],
+        y = .y*(wh$h[2]/my)+wh$h[1],
         z = ym[idx])
     
     aes <- aes(.data[["x"]], .data[["y"]])
