@@ -58,7 +58,6 @@ NULL
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
     a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
-    
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
@@ -72,10 +71,12 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     ym <- .get_multiscale_data(y, k)
     if (length(dim(ym)) > 2) {
         if (is.null(z)) {
+            # max-projection across z-slices
             nm <- vapply(axes(y), \(.) .$name, character(1))
             yx <- match(c("y", "x"), nm)
             ym <- apply(ym, yx, max)
         } else {
+            # subset target z-slice
             ym <- ym[z,,]
         }
     }
@@ -84,19 +85,23 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
     
-    # offset &  multi-scale adjustment
+    # offset & multi-scale adjustment
+    ds <- dim(ym)
     wh <- .get_wh(y)
-    t <- .get_multiscale_scale(y)
-    tx <- t[length(t)]
-    ty <- t[length(t)-1L]
-    .x <- tx*idx[, 2L]
-    .y <- ty*idx[, 1L]
-    mx <- dim(ym)[2]*tx
-    my <- dim(ym)[1]*ty
+    if (wh$w[2] == tail(dim(y), 1) ||
+        wh$h[2] == tail(dim(y), 2)[1]) {
+        ts <- .get_multiscale_scale(y)
+        tx <- tail(ts, 1)
+        ty <- tail(ts, 2)[1]
+    } else tx <- ty <- 1
+    nx <- tail(ds, 1)
+    ny <- tail(ds, 2)[1]
+    sx <- (diff(wh$w)/nx)*tx
+    sy <- (diff(wh$h)/ny)*ty
     df <- data.frame(
-        x = .x*(wh$w[2]/mx)+wh$w[1],
-        y = .y*(wh$h[2]/my)+wh$h[1],
-        z = ym[idx])
+        x=wh$w[1]+idx[,2L]*sx, 
+        y=wh$h[1]+idx[,1L]*sy, 
+        z=ym[idx])
     
     aes <- aes(.data[["x"]], .data[["y"]])
     if (!is.null(c)) {

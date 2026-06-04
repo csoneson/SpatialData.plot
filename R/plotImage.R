@@ -172,7 +172,6 @@ NULL
 }
 
 #' @importFrom utils tail
-#' @importFrom spatialdataR transform
 .get_wh <- \(x) {
     wh <- metadata(x)$wh
     if (!is.null(wh)) {
@@ -184,10 +183,6 @@ NULL
             y=c(0, tail(ds, 2)[1]))
     }
     wh <- list(w=df$x, h=df$y)
-    # multi-scale adjustment
-    t <- .get_multiscale_scale(x)
-    wh$w[2] <- wh$w[2]*t[length(t)]
-    wh$h[2] <- wh$h[2]*t[length(t)-1]
     return(wh)
 }
 
@@ -213,7 +208,6 @@ setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl
     if (is.numeric(j))
         j <- CTname(y)[j]
     y <- transform(y, j)
-    wh <- .get_wh(y)
     if (.is_rgb(y)) {
         # RGB: we plot everything by default and we don't normalize
         ch <- ch %||% channels(y)
@@ -225,6 +219,16 @@ setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl
         nms <- unlist(channels(y))[idx <- .ch_idx(y, ch)]
         pal <- pal[seq_along(idx)]; names(pal) <- nms
     }
+    # multi-scale adjustment
+    wh <- .get_wh(y)
+    if (wh$w[2] == tail(dim(y), 1) ||
+        wh$h[2] == tail(dim(y), 2)[1]) {
+        ts <- .get_multiscale_scale(y)
+        tx <- tail(ts, 1)
+        ty <- tail(ts, 2)[1]
+    } else tx <- ty <- 1
+    wh$w[2] <- wh$w[2]*tx
+    wh$h[2] <- wh$h[2]*ty
     .gg_i(df, wh$w, wh$h, pal)
 })
 
