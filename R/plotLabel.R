@@ -58,6 +58,9 @@ NULL
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
     a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
+    
+    #x <- sd_small; i <- j <- 1; k <- z <- NULL; nan <- NA; assay <- 1; a <- 0.5; c <- "id"
+    
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
@@ -106,18 +109,11 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     aes <- aes(.data[["x"]], .data[["y"]])
     if (!is.null(c)) {
         stopifnot(length(c) == 1, is.character(c))
-        t <- table(x, hasTable(x, i, name=TRUE))
-        ik <- .instance_key(t)
-        # TODO: search ik in both internal and regular colData for now
-        # thus perhaps update, spatialdataR::valTable instead
-        # idx <- match(df$z, int_colData(t)[[ik]])
-        if (ik %in% names(int_colData(t))){
-          coldata <- int_colData(t)[[ik]]
-        } else {
-          coldata <- colData(t)[[ik]]
-        }
-        idx <- match(df$z, coldata)
-        df$z <- getTable(x, i, c, assay=assay)[idx]
+        se <- getTable(x, i)
+        is <- instances(se)
+        ik <- instance_key(se)
+        val <- getTable(x, i, c, assay=assay)
+        df$z <- val[match(df$z, is)]
         if (c == ik) df$z <- factor(df$z)
         aes$fill <- aes(.data[["z"]])[[1]]
         thm <- switch(scale_type(df$z), 
