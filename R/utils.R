@@ -59,6 +59,26 @@
     data(x, .guess_scale(x, w, h))
 }
 
+# x = image or label
+# y = high-dim. array
+# z = (optional) index
+.project <- \(x, y, z=NULL) {
+    ok <- c("x", "y", "c")
+    as <- axes(x, "name")
+    ok <- as %in% ok
+    if (all(ok)) return(y) # 2D
+    if (is.null(z)) { # project
+        y <- apply(y, which(ok), max)
+        return(y) 
+    }
+    # specific slice
+    i <- !logical(length(as))
+    i <- as.list(i)
+    i[as == "z"] <- z
+    arg <- c(list(y), i)
+    do.call(`[`, arg)
+}
+
 #' @importFrom utils tail
 .raw_wh <- \(x) {
     wh <- metadata(x)$wh

@@ -161,9 +161,8 @@ NULL
 #' @importFrom spatialdataR data_type
 .df_i <- \(x, k=NULL, ch=NULL, c=NULL, cl=NULL) {
     a <- .get_ms_data(x, k)
-    # max-projection over z-stacks
-    d <- length(dim(x))
-    if (d == 4) a <- apply(a, c(1, 3, 4), max)
+    # 2D max-projection
+    a <- .project(x, a)
     # subset channels of interest
     a <- a[.ch_idx(x, ch),,,drop=FALSE]
     a <- .norm_ia(a, data_type(x))

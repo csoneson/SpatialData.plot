@@ -60,6 +60,11 @@ NULL
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
     a=0.5, pal=NULL, nan=NA, assay=1, z=NULL) {
 
+    if (!is.null(z)) {
+        ok <- length(z) == 1 && is.numeric(z) && z == round(z) && z > 0
+        if (!ok) stop("invalid 'z'; should be a scalar integer > 0")
+    }
+    
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
@@ -71,18 +76,8 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
 
     # get array data
     ym <- .get_ms_data(y, k)
-    if (length(dim(ym)) > 2) {
-        if (is.null(z)) {
-            # max-projection across z-slices
-            nm <- vapply(axes(y), \(.) .$name, character(1))
-            yx <- match(c("y", "x"), nm)
-            ym <- apply(ym, yx, max)
-        } else {
-            # subset target z-slice
-            ym <- ym[z,,]
-        }
-    }
-  
+    ym <- .project(y, ym, z)
+    
     # keep only indices != 0 since labels might be sparse 
     # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
