@@ -160,7 +160,7 @@ NULL
 #' @importFrom DelayedArray realize
 #' @importFrom spatialdataR data_type
 .df_i <- \(x, k=NULL, ch=NULL, c=NULL, cl=NULL) {
-    a <- .get_multiscale_data(x, k)
+    a <- .get_ms_data(x, k)
     # max-projection over z-stacks
     d <- length(dim(x))
     if (d == 4) a <- apply(a, c(1, 3, 4), max)
@@ -169,21 +169,6 @@ NULL
     a <- .norm_ia(a, data_type(x))
     # color merging & contrasts
     a <- .prep_ia(a, c, cl)
-}
-
-#' @importFrom utils tail
-.get_wh <- \(x) {
-    wh <- metadata(x)$wh
-    if (!is.null(wh)) {
-        df <- data.frame(x=wh[[1]], y=wh[[2]])
-    } else {
-        ds <- dim(data(x, 1))
-        df <- data.frame(
-            x=c(0, tail(ds, 1)), 
-            y=c(0, tail(ds, 2)[1]))
-    }
-    wh <- list(w=df$x, h=df$y)
-    return(wh)
 }
 
 #' @importFrom ggplot2 guides geom_point geom_blank annotation_raster 
@@ -219,16 +204,8 @@ setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl
         nms <- unlist(channels(y))[idx <- .ch_idx(y, ch)]
         pal <- pal[seq_along(idx)]; names(pal) <- nms
     }
-    # multi-scale adjustment
+    # physical space mapping
     wh <- .get_wh(y)
-    if (wh$w[2] == tail(dim(y), 1) ||
-        wh$h[2] == tail(dim(y), 2)[1]) {
-        ts <- .get_multiscale_scale(y)
-        tx <- tail(ts, 1)
-        ty <- tail(ts, 2)[1]
-    } else tx <- ty <- 1
-    wh$w[2] <- wh$w[2]*tx
-    wh$h[2] <- wh$h[2]*ty
     .gg_i(df, wh$w, wh$h, pal)
 })
 
@@ -238,5 +215,5 @@ setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl
 plotSpatialData <- \() ggplot() + coord_sf(expand=FALSE, reverse="y") + .theme 
 # `annotation_raster` plots the array the same way it is printed, i.e., with the
 # row 1 at the top, which means we need to flip the y-axis to have the correct axis labels.
-# We tried flipping the image itself but it means everything gets out of alignement if
+# We tried flipping the image itself but it means everything gets out of alignment if
 # the user sets `scale_y_reverse()` themselves.

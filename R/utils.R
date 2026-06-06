@@ -47,22 +47,46 @@
 
 # guess scale of image or label
 .guess_scale <- \(x, w, h) {
-  i <- match(c("y", "x"), vapply(axes(x), \(.) .$name, character(1)))
-  d <- vapply(x@data, dim, numeric(length(dim(x))))
-  d <- apply(d, 2, \(.) sum(abs(.[i]-c(h, w))))
-  which.min(d)
+    i <- match(c("y", "x"), vapply(axes(x), \(.) .$name, character(1)))
+    d <- vapply(x@data, dim, numeric(length(dim(x))))
+    d <- apply(d, 2, \(.) sum(abs(.[i]-c(h, w))))
+    which.min(d)
 }
 
 # get multiscale
-.get_multiscale_data <- \(x, k=NULL, w=800, h=800) {
-  if (!is.null(k)) return(data(x, k))
-  data(x, .guess_scale(x, w, h))
+.get_ms_data <- \(x, k=NULL, w=800, h=800) {
+    if (!is.null(k)) return(data(x, k))
+    data(x, .guess_scale(x, w, h))
 }
 
-#' @importFrom spatialdataR meta
-.get_multiscale_scale <- \(x) {
-    ms <- spatialdataR:::multiscales(meta(x))[[1]]
-    ds <- ms$datasets[[1]]
-    ct <- ds$coordinateTransformations[[1]]
-    return(unlist(ct$scale))
+#' @importFrom utils tail
+.raw_wh <- \(x) {
+    wh <- metadata(x)$wh
+    if (!is.null(wh)) {
+        df <- data.frame(x=wh[[1]], y=wh[[2]])
+    } else {
+        ds <- dim(data(x, 1))
+        df <- data.frame(
+            x=c(0, tail(ds, 1)), 
+            y=c(0, tail(ds, 2)[1]))
+    }
+    wh <- list(w=df$x, h=df$y)
+    return(wh)
+}
+    
+# map index to physical space
+# through multi-scale adjustment
+.get_wh <- \(x) {
+    wh <- .raw_wh(x)
+    if (wh$w[2] == tail(dim(x), 1) ||
+        wh$h[2] == tail(dim(x), 2)[1]) {
+        ts <- spatialdataR:::.get_ms_scale(x)
+        tx <- tail(ts, 1)
+        ty <- tail(ts, 2)[1]
+    } else {
+        tx <- ty <- 1
+    }
+    wh$w[2] <- wh$w[2]*tx
+    wh$h[2] <- wh$h[2]*ty
+    return(wh)
 }

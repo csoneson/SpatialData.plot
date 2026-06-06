@@ -69,7 +69,7 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     y <- transform(y, j)
 
     # get array data
-    ym <- .get_multiscale_data(y, k)
+    ym <- .get_ms_data(y, k)
     if (length(dim(ym)) > 2) {
         if (is.null(z)) {
             # max-projection across z-slices
@@ -86,19 +86,13 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
     
-    # offset & multi-scale adjustment
+    # physical space mapping
     ds <- dim(ym)
     wh <- .get_wh(y)
-    if (wh$w[2] == tail(dim(y), 1) ||
-        wh$h[2] == tail(dim(y), 2)[1]) {
-        ts <- .get_multiscale_scale(y)
-        tx <- tail(ts, 1)
-        ty <- tail(ts, 2)[1]
-    } else tx <- ty <- 1
     nx <- tail(ds, 1)
     ny <- tail(ds, 2)[1]
-    sx <- (diff(wh$w)/nx)*tx
-    sy <- (diff(wh$h)/ny)*ty
+    sx <- diff(wh$w)/nx
+    sy <- diff(wh$h)/ny
     df <- data.frame(
         x=wh$w[1]+idx[,2L]*sx, 
         y=wh$h[1]+idx[,1L]*sy, 
