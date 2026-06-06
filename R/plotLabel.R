@@ -15,6 +15,7 @@
 #' @param a scalar numeric in [0, 1]; alpha value passed to \code{geom_tile}.
 #' @param pal character vector; color for discrete/continuous values
 #'   (interpolated automatically when insufficient values are provided).
+#'   When left unspecified, color will be sampled at random.
 #' @param nan character string; color for missing values (hidden by default).
 #' @param z scalar integer; 
 #'   specifies which z-slice to plot when \code{label(x, i)} is 3D; 
@@ -57,7 +58,7 @@ NULL
 #' @importFrom SingleCellExperiment colData
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
-    a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
+    a=0.5, pal=NULL, nan=NA, assay=1, z=NULL) {
 
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
@@ -121,7 +122,13 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
                 theme(legend.key.size=unit(0.5, "lines")),
                 scale_fill_gradientn(c, colors=pal, na.value=nan)))
     } else {
-        aes$fill <- aes(.data$z != 0)[[1]]
+        if (is.null(pal)) {
+            id <- instances(y)
+            pal <- sample(colors(), length(id), TRUE)
+            aes$fill <- aes(factor(.data$z))[[1]]
+        } else {
+            aes$fill <- aes(.data$z != 0)[[1]]
+        }
         thm <- list(
             theme(legend.position="none"),
             scale_fill_manual(NULL, values=pal))
