@@ -58,9 +58,7 @@ NULL
 #' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
     a=0.5, pal=c("red", "green"), nan=NA, assay=1, z=NULL) {
-    
-    #x <- sd_small; i <- j <- 1; k <- z <- NULL; nan <- NA; assay <- 1; a <- 0.5; c <- "id"
-    
+
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
