@@ -75,18 +75,17 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     ym <- .project(y, ym, z)
     axisNames <- axisNames[axisNames != "z"]
     # subset to selected time
-    tidx <- which(axisNames=="t") 
-    if (length(tidx)>0) {
+    tidx <- which(axisNames == "t") 
+    if (length(tidx) > 0) {
         if (is.null(t)) {
             t <- 1
         } 
-        if (length(t)>1) {
+        if (length(t) > 1) {
             stop("Only a single timepoint can be selected")
         }
         ym <- .subset_array_by_axes(a=ym, axisNames=axisNames,
                                     t=t, drop=FALSE)
-        dim(ym) <- dim(ym)[axisNames!="t"]
-        axisNames <- axisNames[-tidx]
+        dim(ym) <- dim(ym)[axisNames != "t"]
     }
 
     # keep only indices != 0 since labels might be sparse 
