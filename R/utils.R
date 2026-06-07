@@ -48,7 +48,7 @@
     # max-projection over z-stacks
     axisNames <- axes(x, y="name")
     zidx <- which(axisNames == "z")
-    if (length(zidx) > 0) {
+    if (length(zidx)) {
         if (is.null(z)) {
             # max-projection across z-slices
             y <- apply(y, seq_along(dim(x))[-zidx], max)
@@ -103,7 +103,7 @@
         if (!is.null(specs[[nm]])) {
             specs[[nm]]
         } else {
-            seq.int(dim(a)[match(nm, axisNames)])
+            TRUE
         }
     })
     do.call("[", c(list(a), idx, list(drop=drop)))

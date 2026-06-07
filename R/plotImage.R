@@ -165,7 +165,7 @@ NULL
     a <- .get_ms_data(x, k)
     axisNames <- axes(x, "name")
     # 2D max-projection
-    a <- .project(x, a)
+    a <- .project(x, a, z)
     axisNames <- axisNames[axisNames != "z"]
     ti <- which(axisNames == "t")
     tn <- length(ti)
