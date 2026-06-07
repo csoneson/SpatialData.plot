@@ -4,10 +4,10 @@
 #' 
 #' @description ...
 #'
-#' @param x \code{\link{SpatialData}} object.
+#' @param x \code{\link[spatialdataR]{SpatialData}} object.
 #' @param i element to use from a given layer.
-#' @param j name of target coordinate system. 
-#' @param k index of the scale of an image; by default (NULL), will auto-select 
+#' @param j index or name of target coordinate system. 
+#' @param k index of the scale to render; by default (NULL), will auto-select 
 #'   scale in order to minimize memory-usage and blurring for a target size of 
 #'   800 x 800px; use Inf to plot the lowest resolution available.
 #' @param ch image channel(s) to be used for plotting (defaults to 
@@ -18,6 +18,8 @@
 #'   specifies channel-wise contrast limits - defaults to [0, 1] for all 
 #'   (ignored when \code{image(x, i)} is an RGB image; 
 #'   for convenience, any NULL = [0, 1], and n = [0, n]).
+#' @param t,z integer scalar to indicate a specific time- or z-slice;
+#'   if left unspecified (default NULL), will perform a max-projection.
 #'
 #' @return ggplot
 #'
@@ -84,7 +86,7 @@ NULL
             n <- length(c)
             if (n < d) stop(
                 "Only ", n, " default colors available, ",
-                "but", d, " are needed; please specify 'c'")
+                "but ", d, " are needed; please specify 'c'")
             c <- c[seq_len(d)]
         }
     }
@@ -117,8 +119,8 @@ NULL
     if (dt %in% names(.DTYPE_MAX_VALUES)) {
         a <- a / .DTYPE_MAX_VALUES[dt]
     } else if (max(a) > 1) {
-        for (i in seq_len(d))
-            a[i,,] <- a[i,,] / max(a[i,,])
+        maxs <- apply(a, 1, max)
+        a <- sweep(a, MARGIN = 1, STATS = maxs, FUN = "/")
     }
   return(a)
 }
@@ -159,25 +161,40 @@ NULL
 #' @importFrom methods as
 #' @importFrom DelayedArray realize
 #' @importFrom spatialdataR data_type
-.df_i <- \(x, k=NULL, ch=NULL, c=NULL, cl=NULL) {
-    a <- .get_multiscale_data(x, k)
-    a <- a[.ch_idx(x, ch),,,drop=FALSE]
+.df_i <- \(x, k=NULL, ch=NULL, t=NULL, c=NULL, cl=NULL, z=NULL) {
+    a <- .get_ms_data(x, k)
+    axisNames <- axes(x, "name")
+    # 2D max-projection
+    a <- .project(x, a)
+    axisNames <- axisNames[axisNames != "z"]
+    ti <- which(axisNames == "t")
+    tn <- length(ti)
+    # subset channels and timepoint of interest
+    if (tn) {
+        if (is.null(t)) {
+            t <- 1
+        } else if (length(t) > 1) {
+            stop("Only a single timepoint can be selected")
+        }
+    }
+    a <- .subset_array_by_axes(a=a, axisNames=axisNames, 
+                               c=.ch_idx(x, ch), t=t, drop=FALSE)
+    # remove time axis if it exists
+    if (tn) {
+        dim(a) <- dim(a)[axisNames != "t"]
+        axisNames <- axisNames[-ti]
+    }
+    # if no channel axis, add dummy axis
+    if (!("c" %in% axisNames)) {
+        dim(a) <- c(1, dim(a))
+        axisNames <- c("c", axisNames)
+    }
     a <- .norm_ia(a, data_type(x))
+    # color merging & contrasts
     a <- .prep_ia(a, c, cl)
 }
 
-#' @importFrom spatialdataR transform
-.get_wh <- \(x) {
-    wh <- metadata(x)$wh
-    if (!is.null(wh)) {
-        df <- data.frame(x=wh[[1]], y=wh[[2]])
-    } else {
-        ds <- dim(data(x, 1))
-        df <- data.frame(x=c(0, ds[3]), y=c(0, ds[2]))
-    }
-    list(w=df[, 1], h=df[, 2])
-}
-
+#' @importFrom rlang .data
 #' @importFrom ggplot2 guides geom_point geom_blank annotation_raster 
 #' @importFrom ggplot2 scale_color_identity scale_x_continuous scale_y_reverse
 .gg_i <- \(x, w, h, pal=NULL) {
@@ -185,7 +202,7 @@ NULL
         guides(col=guide_legend(override.aes=list(alpha=1, size=2))),
         geom_point(aes(col=.data$foo), data.frame(foo=pal), x=0, y=0, alpha=0))
     list(l,
-        geom_blank(aes(x=x, y=y), data.frame(x=w, y=h)),
+        geom_blank(aes(x=.data$x, y=.data$y), data.frame(x=w, y=h)),
         annotation_raster(x, w[1],w[2], h[2],h[1], interpolate=FALSE),
         scale_color_identity(NULL, guide="legend", breaks=pal, labels=names(pal)),
         ggnewscale::new_scale_color())
@@ -193,25 +210,26 @@ NULL
 
 #' @rdname plotImage
 #' @export
-setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl=NULL) {
+setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl=NULL, t=NULL, z=NULL) {
     if (is.numeric(i))
         i <- imageNames(x)[i]
     y <- image(x, i)
     if (is.numeric(j))
         j <- CTname(y)[j]
     y <- transform(y, j)
-    wh <- .get_wh(y)
     if (.is_rgb(y)) {
         # RGB: we plot everything by default and we don't normalize
         ch <- ch %||% channels(y)
         cl <- cl %||% c(0, 1/3)
     }
-    df <- .df_i(y, k, ch, c, cl)
+    df <- .df_i(y, k, ch, t, c, cl, z)
     pal <- c %||% .DEFAULT_COLORS
     if (dim(y)[1] > 1 && !.is_rgb(y)) {
         nms <- unlist(channels(y))[idx <- .ch_idx(y, ch)]
         pal <- pal[seq_along(idx)]; names(pal) <- nms
     }
+    # physical space mapping
+    wh <- .get_wh(y)
     .gg_i(df, wh$w, wh$h, pal)
 })
 
@@ -221,5 +239,5 @@ setMethod("plotImage", "SpatialData", \(x, i=1, j=1, k=NULL, ch=NULL, c=NULL, cl
 plotSpatialData <- \() ggplot() + coord_sf(expand=FALSE, reverse="y") + .theme 
 # `annotation_raster` plots the array the same way it is printed, i.e., with the
 # row 1 at the top, which means we need to flip the y-axis to have the correct axis labels.
-# We tried flipping the image itself but it means everything gets out of alignement if
+# We tried flipping the image itself but it means everything gets out of alignment if
 # the user sets `scale_y_reverse()` themselves.

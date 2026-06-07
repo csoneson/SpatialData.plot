@@ -12,9 +12,11 @@
   k = NULL,
   c = NULL,
   a = 0.5,
-  pal = c("red", "green"),
+  pal = NULL,
   nan = NA,
-  assay = 1
+  assay = 1,
+  t = NULL,
+  z = NULL
 )
 }
 \arguments{
@@ -22,31 +24,39 @@
 
 \item{i}{character string or index; the label element to plot.}
 
-\item{j}{name of target coordinate system.}
+\item{j}{index or name of target coordinate system.}
 
-\item{k}{index of the scale of an image; by default (NULL), will auto-select 
+\item{k}{index of the scale to render; by default (NULL), will auto-select 
 scale in order to minimize memory-usage and blurring for a target size of 
 800 x 800px; use Inf to plot the lowest resolution available.}
 
-\item{c}{the default, NULL, gives a binary image of whether or not 
-a given pixel is non-zero; alternatively, a character string specifying
-a \code{colData} column or row name in a \code{table} annotating \code{i}.}
+\item{c}{determines label colors; 
+the default (NULL), gives a binary image of whether or not a
+pixel is non-zero; alternatively, a character string specifying
+a \code{colData} column or row name in an annotation \code{table}.}
 
 \item{a}{scalar numeric in [0, 1]; alpha value passed to \code{geom_tile}.}
 
 \item{pal}{character vector; color for discrete/continuous values
-(interpolated automatically when insufficient values are provided).}
+(interpolated automatically when insufficient values are provided).
+When left unspecified, color will be sampled at random.}
 
 \item{nan}{character string; color for missing values (hidden by default).}
 
-\item{assay}{character string; in case of \code{c} denoting a row name,
-specifies which \code{assay} data to use (see \code{\link{valTable}}).}
+\item{assay}{character string; 
+in case of \code{c} denoting a row name,
+specifies which \code{assay} data to use 
+(see \code{\link[spatialdataR]{getTable}}).}
+
+\item{t, z}{integer scalar to indicate a specific time- or z-slice;
+if left unspecified (default NULL), will perform a max-projection.}
 }
 \description{
 \code{SpatialData} label viz.
 }
 \examples{
-x <- system.file("extdata", "blobs.zarr", package="spatialdataR")
+x <- file.path("extdata", "blobs.zarr")
+x <- system.file(x, package="spatialdataR")
 x <- readSpatialData(x)
 
 i <- "blobs_labels"
@@ -61,12 +71,10 @@ t$id <- sample(letters, ncol(t))
 table(x) <- t
 
 # coloring by 'colData'
-n <- length(unique(t$id))
-
-# pal <- hcl.colors(n, "Spectral")
-pal_d <- hcl.colors(10, "Spectral")
-p + plotLabel(x, i, c="id", pal=pal_d)
+p + plotLabel(x, i, c="id")
 
 # coloring by 'assay' data
-p + plotLabel(x, i, c="channel_1_sum")
+p + plotLabel(x, i, 
+  c="channel_1_sum", 
+  pal=c("lavender", "blue"))
 }

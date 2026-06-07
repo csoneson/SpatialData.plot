@@ -3,22 +3,24 @@
 #' 
 #' @param x \code{SpatialData} object.
 #' @param i character string or index; the label element to plot.
-#' @param j name of target coordinate system. 
-#' @param k index of the scale of an image; by default (NULL), will auto-select 
-#'   scale in order to minimize memory-usage and blurring for a target size of 
-#'   800 x 800px; use Inf to plot the lowest resolution available.
-#' @param c the default, NULL, gives a binary image of whether or not 
-#'   a given pixel is non-zero; alternatively, a character string specifying
-#'   a \code{colData} column or row name in a \code{table} annotating \code{i}.
-#' @param assay character string; in case of \code{c} denoting a row name,
-#'   specifies which \code{assay} data to use (see \code{\link{valTable}}).
+#' @param c determines label colors; 
+#'   the default (NULL), gives a binary image of whether or not a
+#'   pixel is non-zero; alternatively, a character string specifying
+#'   a \code{colData} column or row name in an annotation \code{table}.
+#' @param assay character string; 
+#'   in case of \code{c} denoting a row name,
+#'   specifies which \code{assay} data to use 
+#'   (see \code{\link[spatialdataR]{getTable}}).
 #' @param a scalar numeric in [0, 1]; alpha value passed to \code{geom_tile}.
 #' @param pal character vector; color for discrete/continuous values
 #'   (interpolated automatically when insufficient values are provided).
+#'   When left unspecified, color will be sampled at random.
 #' @param nan character string; color for missing values (hidden by default).
+#' @inheritParams plotImage
 #' 
 #' @examples
-#' x <- system.file("extdata", "blobs.zarr", package="spatialdataR")
+#' x <- file.path("extdata", "blobs.zarr")
+#' x <- system.file(x, package="spatialdataR")
 #' x <- readSpatialData(x)
 #' 
 #' i <- "blobs_labels"
@@ -33,57 +35,85 @@
 #' table(x) <- t
 #' 
 #' # coloring by 'colData'
-#' n <- length(unique(t$id))
-#' 
-#' # pal <- hcl.colors(n, "Spectral")
-#' pal_d <- hcl.colors(10, "Spectral")
-#' p + plotLabel(x, i, c="id", pal=pal_d)
+#' p + plotLabel(x, i, c="id")
 #' 
 #' # coloring by 'assay' data
-#' p + plotLabel(x, i, c="channel_1_sum")
+#' p + plotLabel(x, i, 
+#'   c="channel_1_sum", 
+#'   pal=c("lavender", "blue"))
 NULL
 
+#' @export
 #' @rdname plotLabel
-#' @importFrom grDevices hcl.colors colorRampPalette
-#' @importFrom S4Vectors metadata
-#' @importFrom rlang .data
 #' @importFrom methods as
+#' @importFrom rlang .data
+#' @importFrom S4Vectors metadata
+#' @importFrom SingleCellExperiment colData
+#' @importFrom grDevices colors hcl.colors colorRampPalette
 #' @importFrom ggplot2 scale_fill_manual scale_fill_gradientn
 #' @importFrom ggplot2 aes theme unit guides guide_legend geom_tile
-#'   
-#' @importFrom SingleCellExperiment colData
-#' @export
 setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL, 
-    a=0.5, pal=c("red", "green"), nan=NA, assay=1) {
+    a=0.5, pal=NULL, nan=NA, assay=1, t=NULL, z=NULL) {
+
+    if (!is.null(z)) {
+        ok <- length(z) == 1 && is.numeric(z) && z == round(z) && z > 0
+        if (!ok) stop("invalid 'z'; should be a scalar integer > 0")
+    }
+
     if (is.numeric(i)) i <- labelNames(x)[i]
     i <- match.arg(i, labelNames(x))
     y <- label(x, i)
+    
     # transformation
     if (is.numeric(j))
       j <- CTname(y)[j]
     y <- transform(y, j)
-    ym <- .get_multiscale_data(y, k)
-    wh <- .get_wh(y)
-  
-    # Keep only indices != 0 since labels might be sparse and thus save memory by not plotting all pixels
+
+    # get array data
+    ym <- .get_ms_data(y, k)
+    axisNames <- axes(x=y, y="name")
+    ym <- .project(y, ym, z)
+    axisNames <- axisNames[axisNames != "z"]
+    # subset to selected time
+    tidx <- which(axisNames=="t") 
+    if (length(tidx)>0) {
+        if (is.null(t)) {
+            t <- 1
+        } 
+        if (length(t)>1) {
+            stop("Only a single timepoint can be selected")
+        }
+        ym <- .subset_array_by_axes(a=ym, axisNames=axisNames,
+                                    t=t, drop=FALSE)
+        dim(ym) <- dim(ym)[axisNames!="t"]
+        axisNames <- axisNames[-tidx]
+    }
+
+    # keep only indices != 0 since labels might be sparse 
+    # and thus save memory by not plotting all pixels
     idx <- BiocGenerics::which(ym != 0L, arr.ind=TRUE)
-    # All other SD elements are flipped when plotted. Let's keep the same convention here.
-    df <- data.frame(x=idx[,2L]+wh$w[1], y=idx[,1L]+wh$h[1], z=ym[idx])
-    aes <- aes(.data[["x"]], .data[["y"]])
+    
+    # physical space mapping
+    ds <- dim(ym)
+    wh <- .get_wh(y)
+    nx <- tail(ds, 1)
+    ny <- tail(ds, 2)[1]
+    sx <- diff(wh$w)/nx
+    sy <- diff(wh$h)/ny
+    df <- data.frame(
+        x=wh$w[1]+idx[,2L]*sx, 
+        y=wh$h[1]+idx[,1L]*sy, 
+        z=ym[idx])
+    
+    aes <- aes(.data$x, .data$y)
     if (!is.null(c)) {
         stopifnot(length(c) == 1, is.character(c))
-        t <- table(x, hasTable(x, i, name=TRUE))
-        ik <- .instance_key(t)
-        # TODO: search ik in both internal and regular colData for now
-        # thus perhaps update, spatialdataR::valTable instead
-        # idx <- match(df$z, int_colData(t)[[ik]])
-        if(ik %in% names(int_colData(t))){
-          coldata <- int_colData(t)[[ik]]
-        } else {
-          coldata <- colData(t)[[ik]]
-        }
-        idx <- match(df$z, coldata)
-        df$z <- getTable(x, i, c, assay=assay)[idx]
+        if (is.null(pal)) pal <- hcl.colors(12, "Spectral")
+        se <- getTable(x, i)
+        is <- instances(se)
+        ik <- instance_key(se)
+        val <- getTable(x, i, c, assay=assay)
+        df$z <- val[match(df$z, is)]
         if (c == ik) df$z <- factor(df$z)
         aes$fill <- aes(.data[["z"]])[[1]]
         thm <- switch(scale_type(df$z), 
@@ -99,7 +129,13 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
                 theme(legend.key.size=unit(0.5, "lines")),
                 scale_fill_gradientn(c, colors=pal, na.value=nan)))
     } else {
-        aes$fill <- aes(.data$z != 0)[[1]]
+        if (is.null(pal)) {
+            id <- instances(y)
+            pal <- sample(colors(), length(id), TRUE)
+            aes$fill <- aes(factor(.data$z))[[1]]
+        } else {
+            aes$fill <- aes(.data$z != 0)[[1]]
+        }
         thm <- list(
             theme(legend.position="none"),
             scale_fill_manual(NULL, values=pal))
