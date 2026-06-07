@@ -72,19 +72,20 @@ setMethod("plotLabel", "SpatialData", \(x, i=1, j=1, k=NULL, c=NULL,
     # get array data
     ym <- .get_ms_data(y, k)
     axisNames <- axes(x=y, y="name")
+    
+    # z-slice or max-projection
     ym <- .project(y, ym, z)
     axisNames <- axisNames[axisNames != "z"]
+    
     # subset to selected time
     tidx <- which(axisNames == "t") 
     if (length(tidx) > 0) {
         if (is.null(t)) {
             t <- 1
-        } 
-        if (length(t) > 1) {
+        } else if (length(t) > 1) {
             stop("Only a single timepoint can be selected")
         }
-        ym <- .subset_array_by_axes(a=ym, axisNames=axisNames,
-                                    t=t, drop=FALSE)
+        ym <- .subset_array_by_axes(a=ym, axisNames=axisNames, t=t, drop=FALSE)
         dim(ym) <- dim(ym)[axisNames != "t"]
     }
 
